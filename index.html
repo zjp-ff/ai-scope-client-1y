@@ -91,7 +91,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
   <h1 style="justify-content:center"><svg width="32" height="32" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#534AB7" stroke-width="2"/><circle cx="14" cy="14" r="6" stroke="#534AB7" stroke-width="1.5"/><line x1="14" y1="0" x2="14" y2="5" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="23" x2="14" y2="28" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="14" x2="5" y2="14" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="14" x2="28" y2="14" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="14" r="2" fill="#D85A30"/></svg>AI作战工具箱</h1>
   <p style="text-align:center">一镜看状态，一卡看变化</p>
   <p style="font-size:11px;color:var(--a6);margin-top:6px;text-align:center" id="updateTime">数据加载中...</p>
-  <p style="font-size:11px;color:var(--a6);text-align:center;margin-top:2px">本链接有效期至 2027年9月12日</p>
+  <p style="font-size:11px;color:var(--a6);text-align:center;margin-top:2px">本链接有效期至 2027年9月15日</p>
 </div>
 <div class="search-box">
   <div class="search-input">
@@ -216,7 +216,7 @@ function refreshData(){
   // 五维历史（AI追踪卡数据源）：独立加载，不阻塞主流程，未就绪时页面照常可用
   cachedJson('history_cache.json?_d='+dayKey+'&v='+PAGE_VER,vHist).then(d=>{hist=d;if(currentCode)show(currentCode,true);}).catch(()=>{});
 }
-const PAGE_VER='20260912-2';
+const PAGE_VER='20260912-3';
 // 版本自检：仅在 version.txt 返回合法版本号且与当前不一致时才刷新。
 // 三重保护防"每5分钟闪屏"：①非版本号格式(如SPA回退的HTML/404页)直接忽略；
 // ②同一版本号 30 分钟内不重复 reload（防 version.txt 未同步时无限循环刷新）；
