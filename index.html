@@ -44,10 +44,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .d-bar i{display:block;height:100%;border-radius:3px;transition:width .6s ease}
 .d-finding{font-size:12px;color:var(--t2);padding:8px 10px;background:var(--bg);border-radius:8px;margin-top:6px;line-height:1.7}
 .cursor{display:inline-block;width:2px;height:14px;background:var(--p6);animation:blink 1s infinite;vertical-align:middle}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
-.overlay.show{display:flex}.modal{background:var(--card);border-radius:18px;padding:24px;max-width:340px;width:100%;text-align:center;animation:fadeIn .3s}
-.modal .btn-row{display:flex;gap:10px;margin-top:16px}.modal .btn-pri{background:var(--p6);color:#fff;padding:11px;border-radius:10px;border:none;flex:1;cursor:pointer}.modal .btn-sec{background:var(--bg);color:var(--t2);border:0.5px solid var(--bd);padding:11px;border-radius:10px;flex:1;cursor:pointer}
-.modal h3{font-size:17px;font-weight:600}.modal p{font-size:13px;color:var(--t2);margin:10px 0}
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:300;display:none}.toast.show{display:block}
 .act-card{margin:16px 12px;padding:14px;background:var(--c50);border-radius:14px;text-align:center}
 .act-card h4{font-size:14px;font-weight:600;color:var(--c6)}
@@ -120,24 +116,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
   </div>
 </div>
 <div id="result"></div>
-<div style="margin:16px 12px 8px;padding:12px 14px;background:var(--a50);border-radius:12px;border:0.5px solid var(--a75);line-height:1.7;text-align:center">
-  <span style="font-size:13px;color:var(--a6)">📞 如遇问题请第一时间联系祖良老师助教：</span><br>
-  <span style="font-size:15px;font-weight:600;color:var(--a9)">朱纪平、康增亮、张卫轩、陈连杰</span>
-</div>
 <div style="margin:8px 12px 8px;padding:10px 14px;background:var(--bg);border-radius:10px;text-align:center"><p style="font-size:10px;color:var(--t3);line-height:1.6">免责声明：本页面所有数据仅供参考，不构成任何投资建议或承诺，投资有风险，入市需谨慎。</p></div>
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h3>🔒 AI追踪卡 · 解锁</h3>
-    <p>AI追踪卡为祖良团队限定权益<br>输入助教老师发放的解锁口令即可使用</p>
-    <input id="unlockInput" type="password" placeholder="请输入解锁口令" onkeydown="if(event.key==='Enter')doUnlock()" style="width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:0.5px solid var(--bd);font-size:15px;text-align:center;margin:4px 0 2px;outline:none;background:var(--bg)">
-    <p style="font-size:11px;color:var(--t3)">还没有口令？扫码联系助教老师领取</p>
-    <img src="qrcode.jpg" width="120" height="120" style="border-radius:10px;margin:2px auto 4px;display:block">
-    <div class="btn-row">
-      <button class="btn-sec" onclick="closeModal()">暂不解锁</button>
-      <button class="btn-pri" onclick="doUnlock()">立即解锁</button>
-    </div>
-  </div>
-</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -145,11 +124,8 @@ let catalog=[],quotes={},full={},hist=null,loaded=false,currentCode=null,current
 const sName=s=>(s||'').replace(/[\s\u3000]/g,'').replace(/[\uFF01-\uFF5E]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase();
 
 
-// ===== AI追踪卡解锁（仅客户版）：口令解锁，localStorage 记住；口令可随时更换 =====
-var TRACK_KEY='wb_track_unlock',TRACK_PASS='0908'; // 正式口令（2026-09-04 用户定，随时可换）
-function trackUnlocked(){try{return localStorage.getItem(TRACK_KEY)==='1';}catch(e){return true;}}
+// ===== AI追踪卡：直接开放 =====
 function switchTab(t){
-  if(t==='track'&&!trackUnlocked()){openModal();return;}
   if(currentTab===t)return;
   currentTab=t;
   document.querySelectorAll('.tb-tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===t));
@@ -240,7 +216,7 @@ function refreshData(){
   // 五维历史（AI追踪卡数据源）：独立加载，不阻塞主流程，未就绪时页面照常可用
   cachedJson('history_cache.json?_d='+dayKey+'&v='+PAGE_VER,vHist).then(d=>{hist=d;if(currentCode)show(currentCode,true);}).catch(()=>{});
 }
-const PAGE_VER='20260912-1';
+const PAGE_VER='20260912-2';
 // 版本自检：仅在 version.txt 返回合法版本号且与当前不一致时才刷新。
 // 三重保护防"每5分钟闪屏"：①非版本号格式(如SPA回退的HTML/404页)直接忽略；
 // ②同一版本号 30 分钟内不重复 reload（防 version.txt 未同步时无限循环刷新）；
@@ -370,9 +346,6 @@ function renderHots(){
 }
 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
-function openModal(){document.getElementById('overlay').classList.add('show');var i=document.getElementById('unlockInput');if(i){i.value='';setTimeout(function(){try{i.focus();}catch(_){}},80);}}
-function closeModal(){document.getElementById('overlay').classList.remove('show')}
-function doUnlock(){var i=document.getElementById('unlockInput');var v=i?i.value.trim():'';if(v!==TRACK_PASS){toast('口令不正确，请核对后重试');if(i){i.value='';setTimeout(function(){try{i.focus();}catch(_){}},50);}return;}try{localStorage.setItem(TRACK_KEY,'1');}catch(e){}closeModal();toast('解锁成功，欢迎使用AI追踪卡');if(currentTab!=='track')switchTab('track');}
 </script>
 <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 <span id="busuanzi_container" style="display:none">总访问 <span id="busuanzi_value_site_pv">0</span></span>
