@@ -96,33 +96,121 @@ var m=document.getElementById('dueMask');if(m)m.style.display='flex';
 var lm=document.getElementById('loadMask');if(lm)lm.style.display='none';
 try{document.documentElement.style.overflow='hidden';}catch(e){}})();
 </script>
-<!-- ===== 整页访问密码锁（2026-09-14 新增）：未解锁前看不到任何内容 ===== -->
+<!-- ===== 账号激活（2026-09-14）：仅名单内账号可进入，名单见 accounts.json ===== -->
 <div id="gateMask" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center">
   <div style="width:58px;height:58px;border-radius:50%;background:var(--p50);display:flex;align-items:center;justify-content:center;font-size:26px">&#128272;</div>
-  <div style="font-size:19px;font-weight:600;color:var(--t1);margin:16px 0 8px">授权访问</div>
-  <p style="font-size:13px;color:var(--t2);line-height:1.9;margin:0">本链接为祖良团队内部权益<br>请输入助教老师发放的访问密码</p>
-  <input id="gateInput" type="password" inputmode="numeric" placeholder="请输入访问密码" onkeydown="if(event.key==='Enter')doGate()" style="width:100%;max-width:280px;box-sizing:border-box;padding:12px;margin-top:14px;border-radius:10px;border:0.5px solid var(--bd);font-size:16px;text-align:center;outline:none;background:var(--card);color:var(--t1)">
-  <button onclick="doGate()" style="margin-top:10px;width:100%;max-width:280px;padding:12px;border:none;border-radius:10px;background:var(--p6);color:#fff;font-size:15px;font-weight:500;cursor:pointer">进入</button>
+  <div style="font-size:19px;font-weight:600;color:var(--t1);margin:16px 0 8px">账号激活</div>
+  <p style="font-size:13px;color:var(--t2);line-height:1.9;margin:0">本链接为祖良团队内部权益<br>请输入助教老师发放的专属账号</p>
+  <input id="gateInput" type="text" inputmode="numeric" autocomplete="off" placeholder="请输入专属账号" onkeydown="if(event.key==='Enter')doGate()" style="width:100%;max-width:280px;box-sizing:border-box;padding:12px;margin-top:14px;border-radius:10px;border:0.5px solid var(--bd);font-size:16px;text-align:center;outline:none;background:var(--card);color:var(--t1)">
+  <button id="gateBtn" onclick="doGate()" style="margin-top:10px;width:100%;max-width:280px;padding:12px;border:none;border-radius:10px;background:var(--p6);color:#fff;font-size:15px;font-weight:500;cursor:pointer">激活</button>
   <p id="gateErr" style="font-size:12px;color:var(--r4);margin:10px 0 0;min-height:16px"></p>
   <p style="font-size:11px;color:var(--t3);margin:2px 0 0">本链接有效期至 2027年9月15日</p>
 </div>
 <script>
-// ===== 整页访问密码锁（2026-09-14）：口令可随时更换 =====
-var GATE_KEY='wb_gate_1y',GATE_PASS='0908';
-(function(){
-  try{if(localStorage.getItem(GATE_KEY)==='1')return;}catch(e){}
-  try{if(new Date()>new Date(DUE_DATE+'T23:59:59'))return;}catch(e){}   // 已到期则交给 dueMask，不显示密码框
+// ===== 账号激活（2026-09-14）：名单 accounts.json 只存哈希，明文不入页面 =====
+var ACCT_SALT='zzx1y#',ACCT_KEY='wb_act_1y',ACCT_LEN=24,ACCT_FILE='accounts.json';
+function sha256hex(msg){
+  function rr(x,n){return (x>>>n)|(x<<(32-n));}
+  var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var b=[],i,c;
+  for(i=0;i<msg.length;i++){
+    c=msg.charCodeAt(i);
+    if(c<128)b.push(c);
+    else if(c<2048)b.push(192|(c>>6),128|(c&63));
+    else if(c<55296||c>=57344)b.push(224|(c>>12),128|((c>>6)&63),128|(c&63));
+    else{i++;var cp=65536+(((c&1023)<<10)|(msg.charCodeAt(i)&1023));b.push(240|(cp>>18),128|((cp>>12)&63),128|((cp>>6)&63),128|(cp&63));}
+  }
+  var len=b.length*8;
+  b.push(128);
+  while(b.length%64!==56)b.push(0);
+  b.push(0,0,0,0,(len>>>24)&255,(len>>>16)&255,(len>>>8)&255,len&255);
+  var w=[],off,j;
+  for(off=0;off<b.length;off+=64){
+    for(i=0;i<16;i++)w[i]=((b[off+i*4]<<24)|(b[off+i*4+1]<<16)|(b[off+i*4+2]<<8)|b[off+i*4+3])|0;
+    for(i=16;i<64;i++){
+      var s0=rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3);
+      var s1=rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10);
+      w[i]=(w[i-16]+s0+w[i-7]+s1)|0;
+    }
+    var a=H[0],bb=H[1],cc=H[2],d=H[3],e=H[4],f=H[5],g=H[6],hh=H[7];
+    for(i=0;i<64;i++){
+      var S1=rr(e,6)^rr(e,11)^rr(e,25);
+      var ch=(e&f)^((~e)&g);
+      var t1=(hh+S1+ch+K[i]+w[i])|0;
+      var S0=rr(a,2)^rr(a,13)^rr(a,22);
+      var maj=(a&bb)^(a&cc)^(bb&cc);
+      var t2=(S0+maj)|0;
+      hh=g;g=f;f=e;e=(d+t1)|0;d=cc;cc=bb;bb=a;a=(t1+t2)|0;
+    }
+    H[0]=(H[0]+a)|0;H[1]=(H[1]+bb)|0;H[2]=(H[2]+cc)|0;H[3]=(H[3]+d)|0;
+    H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+hh)|0;
+  }
+  var out='';
+  for(i=0;i<8;i++)out+=('00000000'+(H[i]>>>0).toString(16)).slice(-8);
+  return out;
+}
+function acctHash(a){return sha256hex(ACCT_SALT+a).slice(0,ACCT_LEN);}
+function acctLoad(){
+  return fetch(ACCT_FILE+'?_t='+Date.now(),{cache:'no-store'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(j){
+    var L={act:{},dis:{}};
+    (j.act||[]).forEach(function(h){L.act[h]=1;});
+    (j.dis||[]).forEach(function(h){L.dis[h]=1;});
+    return L;
+  });
+}
+function gateShow(tip){
   var m=document.getElementById('gateMask');if(!m)return;
   m.style.display='flex';
-  var lm=document.getElementById('loadMask');if(lm)lm.style.display='none';
-  try{document.documentElement.style.overflow='hidden';}catch(e){}
-  setTimeout(function(){var i=document.getElementById('gateInput');if(i){try{i.focus();}catch(_){}}},150);
+  var e=document.getElementById('gateErr');if(e)e.textContent=tip||'';
+  var i=document.getElementById('gateInput');
+  if(i&&!i.disabled)setTimeout(function(){try{i.focus();}catch(_){}},120);
+}
+function gateHide(){
+  var m=document.getElementById('gateMask');if(m)m.style.display='none';
+}
+function gateBusy(on){
+  var b=document.getElementById('gateBtn'),i=document.getElementById('gateInput');
+  if(b){b.disabled=!!on;b.textContent=on?'验证中…':'激活';}
+  if(i)i.disabled=!!on;
+}
+// 打开/刷新即校验：已记住的账号也要过一遍最新名单，停用/退款即刻失效
+(function(){
+  try{if(new Date()>new Date(DUE_DATE+'T23:59:59'))return;}catch(e){}
+  var m=document.getElementById('gateMask');if(!m)return;
+  m.style.display='flex';
+  var saved='';try{saved=localStorage.getItem(ACCT_KEY)||'';}catch(e){}
+  acctLoad().then(function(L){
+    if(saved&&L.act[acctHash(saved)]){gateHide();}
+    else{
+      if(saved){try{localStorage.removeItem(ACCT_KEY);}catch(e){}}
+      gateShow(saved?'该账号已失效，请联系助教老师':'');
+    }
+  }).catch(function(){
+    if(saved){gateHide();}
+    else gateShow('名单加载失败，请检查网络后重新打开');
+  });
 })();
 function doGate(){
-  var i=document.getElementById('gateInput'),v=i?i.value.trim():'',e=document.getElementById('gateErr');
-  if(v!==GATE_PASS){if(e)e.textContent='密码不正确，请核对后重试';if(i){i.value='';try{i.focus();}catch(_){}}return;}
-  try{localStorage.setItem(GATE_KEY,'1');}catch(x){}
-  location.reload();
+  var i=document.getElementById('gateInput'),e=document.getElementById('gateErr');
+  var v=i?(i.value||'').trim():'';
+  if(!v){if(e)e.textContent='请输入账号';return;}
+  if(e)e.textContent='';
+  gateBusy(true);
+  acctLoad().then(function(L){
+    var h=acctHash(v);
+    if(L.act[h]){try{localStorage.setItem(ACCT_KEY,v);}catch(x){}gateBusy(false);gateHide();}
+    else if(L.dis[h]){if(e)e.textContent='该账号已停用，请联系助教老师';gateBusy(false);}
+    else{
+      if(e)e.textContent='账号不存在，请核对后重试';
+      if(i){i.value='';}
+      gateBusy(false);
+      if(i)setTimeout(function(){try{i.focus();}catch(_){}},60);
+    }
+  }).catch(function(){if(e)e.textContent='名单加载失败，请检查网络后重试';gateBusy(false);});
 }
 </script>
 <div class="banner" style="text-align:center">
@@ -257,7 +345,7 @@ function refreshData(){
   // 五维历史（AI追踪卡数据源）：独立加载，不阻塞主流程，未就绪时页面照常可用
   cachedJson('history_cache.json?_d='+dayKey+'&v='+PAGE_VER,vHist).then(d=>{hist=d;if(currentCode)show(currentCode,true);}).catch(()=>{});
 }
-const PAGE_VER='20260912-5';
+const PAGE_VER='20260914-1';
 // 版本自检：仅在 version.txt 返回合法版本号且与当前不一致时才刷新。
 // 三重保护防"每5分钟闪屏"：①非版本号格式(如SPA回退的HTML/404页)直接忽略；
 // ②同一版本号 30 分钟内不重复 reload（防 version.txt 未同步时无限循环刷新）；
