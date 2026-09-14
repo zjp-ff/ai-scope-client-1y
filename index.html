@@ -151,7 +151,8 @@ function sha256hex(msg){
   return out;
 }
 function acctHash(a){return sha256hex(ACCT_SALT+a).slice(0,ACCT_LEN);}
-function acctLoad(){
+function acctLoad(n){
+  n=n||0;
   return fetch(ACCT_FILE+'?_t='+Date.now(),{cache:'no-store'}).then(function(r){
     if(!r.ok)throw new Error('HTTP '+r.status);
     return r.json();
@@ -160,6 +161,9 @@ function acctLoad(){
     (j.act||[]).forEach(function(h){L.act[h]=1;});
     (j.dis||[]).forEach(function(h){L.dis[h]=1;});
     return L;
+  }).catch(function(e){
+    if(n<2)return new Promise(function(ok){setTimeout(ok,1200);}).then(function(){return acctLoad(n+1);});
+    throw e;
   });
 }
 function gateShow(tip){
@@ -177,12 +181,17 @@ function gateBusy(on){
   if(b){b.disabled=!!on;b.textContent=on?'验证中…':'激活';}
   if(i)i.disabled=!!on;
 }
-// 打开/刷新即校验：已记住的账号也要过一遍最新名单，停用/退款即刻失效
-(function(){
+// 打开/刷新/切回页面/每 3 分钟 都会校验：已记住的账号也要过一遍最新名单，停用/退款尽快失效
+var GATE_CHECKING=false,GATE_MS=180000;
+function acctCheck(first){
   try{if(new Date()>new Date(DUE_DATE+'T23:59:59'))return;}catch(e){}
   var m=document.getElementById('gateMask');if(!m)return;
-  m.style.display='flex';
+  if(GATE_CHECKING)return;
   var saved='';try{saved=localStorage.getItem(ACCT_KEY)||'';}catch(e){}
+  if(first)m.style.display='flex';
+  else if(!saved&&m.style.display==='flex')return;   // 未激活时不重复校验，避免清掉输错提示/打断输入
+  GATE_CHECKING=true;
+  function release(){GATE_CHECKING=false;}
   acctLoad().then(function(L){
     if(saved&&L.act[acctHash(saved)]){gateHide();}
     else{
@@ -192,8 +201,11 @@ function gateBusy(on){
   }).catch(function(){
     if(saved){gateHide();}
     else gateShow('名单加载失败，请检查网络后重新打开');
-  });
-})();
+  }).then(release,release);
+}
+acctCheck(true);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)acctCheck(false);});
+setInterval(function(){if(!document.hidden)acctCheck(false);},GATE_MS);
 function doGate(){
   var i=document.getElementById('gateInput'),e=document.getElementById('gateErr');
   var v=i?(i.value||'').trim():'';
@@ -345,7 +357,7 @@ function refreshData(){
   // 五维历史（AI追踪卡数据源）：独立加载，不阻塞主流程，未就绪时页面照常可用
   cachedJson('history_cache.json?_d='+dayKey+'&v='+PAGE_VER,vHist).then(d=>{hist=d;if(currentCode)show(currentCode,true);}).catch(()=>{});
 }
-const PAGE_VER='20260914-1';
+const PAGE_VER='20260914-2';
 // 版本自检：仅在 version.txt 返回合法版本号且与当前不一致时才刷新。
 // 三重保护防"每5分钟闪屏"：①非版本号格式(如SPA回退的HTML/404页)直接忽略；
 // ②同一版本号 30 分钟内不重复 reload（防 version.txt 未同步时无限循环刷新）；
