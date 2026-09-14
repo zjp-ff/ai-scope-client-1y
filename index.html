@@ -96,6 +96,35 @@ var m=document.getElementById('dueMask');if(m)m.style.display='flex';
 var lm=document.getElementById('loadMask');if(lm)lm.style.display='none';
 try{document.documentElement.style.overflow='hidden';}catch(e){}})();
 </script>
+<!-- ===== 整页访问密码锁（2026-09-14 新增）：未解锁前看不到任何内容 ===== -->
+<div id="gateMask" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center">
+  <div style="width:58px;height:58px;border-radius:50%;background:var(--p50);display:flex;align-items:center;justify-content:center;font-size:26px">&#128272;</div>
+  <div style="font-size:19px;font-weight:600;color:var(--t1);margin:16px 0 8px">授权访问</div>
+  <p style="font-size:13px;color:var(--t2);line-height:1.9;margin:0">本链接为祖良团队内部权益<br>请输入助教老师发放的访问密码</p>
+  <input id="gateInput" type="password" inputmode="numeric" placeholder="请输入访问密码" onkeydown="if(event.key==='Enter')doGate()" style="width:100%;max-width:280px;box-sizing:border-box;padding:12px;margin-top:14px;border-radius:10px;border:0.5px solid var(--bd);font-size:16px;text-align:center;outline:none;background:var(--card);color:var(--t1)">
+  <button onclick="doGate()" style="margin-top:10px;width:100%;max-width:280px;padding:12px;border:none;border-radius:10px;background:var(--p6);color:#fff;font-size:15px;font-weight:500;cursor:pointer">进入</button>
+  <p id="gateErr" style="font-size:12px;color:var(--r4);margin:10px 0 0;min-height:16px"></p>
+  <p style="font-size:11px;color:var(--t3);margin:2px 0 0">本链接有效期至 2027年9月15日</p>
+</div>
+<script>
+// ===== 整页访问密码锁（2026-09-14）：口令可随时更换 =====
+var GATE_KEY='wb_gate_1y',GATE_PASS='0908';
+(function(){
+  try{if(localStorage.getItem(GATE_KEY)==='1')return;}catch(e){}
+  try{if(new Date()>new Date(DUE_DATE+'T23:59:59'))return;}catch(e){}   // 已到期则交给 dueMask，不显示密码框
+  var m=document.getElementById('gateMask');if(!m)return;
+  m.style.display='flex';
+  var lm=document.getElementById('loadMask');if(lm)lm.style.display='none';
+  try{document.documentElement.style.overflow='hidden';}catch(e){}
+  setTimeout(function(){var i=document.getElementById('gateInput');if(i){try{i.focus();}catch(_){}}},150);
+})();
+function doGate(){
+  var i=document.getElementById('gateInput'),v=i?i.value.trim():'',e=document.getElementById('gateErr');
+  if(v!==GATE_PASS){if(e)e.textContent='密码不正确，请核对后重试';if(i){i.value='';try{i.focus();}catch(_){}}return;}
+  try{localStorage.setItem(GATE_KEY,'1');}catch(x){}
+  location.reload();
+}
+</script>
 <div class="banner" style="text-align:center">
   <div style="margin-bottom:6px;text-align:left">
     <span class="badge" style="background:var(--a75);color:var(--a9);font-size:12px;padding:3px 12px;border-radius:14px;font-weight:500">&#9733; 祖良团队专属</span>
@@ -228,7 +257,7 @@ function refreshData(){
   // 五维历史（AI追踪卡数据源）：独立加载，不阻塞主流程，未就绪时页面照常可用
   cachedJson('history_cache.json?_d='+dayKey+'&v='+PAGE_VER,vHist).then(d=>{hist=d;if(currentCode)show(currentCode,true);}).catch(()=>{});
 }
-const PAGE_VER='20260912-4';
+const PAGE_VER='20260912-5';
 // 版本自检：仅在 version.txt 返回合法版本号且与当前不一致时才刷新。
 // 三重保护防"每5分钟闪屏"：①非版本号格式(如SPA回退的HTML/404页)直接忽略；
 // ②同一版本号 30 分钟内不重复 reload（防 version.txt 未同步时无限循环刷新）；
